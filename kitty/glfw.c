@@ -936,7 +936,7 @@ intercept_cocoa_fullscreen(GLFWwindow *w) {
 #endif
 
 static void
-init_window_chrome_state(WindowChromeState *s, color_type active_window_bg, bool is_semi_transparent, float background_opacity) {
+init_window_chrome_state(WindowChromeState *s, color_type active_window_bg, bool is_semi_transparent, float background_opacity, bool tabs_hidden) {
     zero_at_ptr(s);
     const bool should_blur = background_opacity < 1.f && OPT(background_blur) > 0 && is_semi_transparent;
 #define SET_TCOL(val) \
@@ -955,6 +955,7 @@ init_window_chrome_state(WindowChromeState *s, color_type active_window_bg, bool
         unsigned long val = OPT(macos_titlebar_color);
         SET_TCOL(val);
     }
+    s->tabs_hidden = OPT(tab_bar_hidden) || tabs_hidden;
     s->macos_colorspace = OPT(macos_colorspace);
     s->resizable = OPT(macos_window_resizable);
 #else
@@ -973,7 +974,7 @@ apply_window_chrome_state(GLFWwindow *w, WindowChromeState new_state, int width,
         new_state.color, new_state.use_system_color, new_state.system_color,
         new_state.background_blur, new_state.hide_window_decorations,
         new_state.show_title_in_titlebar, new_state.macos_colorspace,
-        new_state.background_opacity, new_state.resizable
+        new_state.background_opacity, new_state.resizable, new_state.tabs_hidden
     );
     // Need to resize the window again after hiding decorations or title bar to take up screen space
     if (window_decorations_changed) glfwSetWindowSize(w, width, height);
@@ -1006,7 +1007,7 @@ set_os_window_chrome(OSWindow *w) {
     }
 
     WindowChromeState new_state;
-    init_window_chrome_state(&new_state, bg, w->is_semi_transparent, w->background_opacity);
+    init_window_chrome_state(&new_state, bg, w->is_semi_transparent, w->background_opacity, w->num_tabs < OPT(tab_bar_min_tabs));
     if (memcmp(&new_state, &w->last_window_chrome, sizeof(WindowChromeState)) != 0) {
         int width, height;
         glfwGetWindowSize(w->handle, &width, &height);
@@ -1320,7 +1321,7 @@ create_os_window(PyObject UNUSED *self, PyObject *args, PyObject *kw) {
             warned = true;
         }
     }
-    init_window_chrome_state(&w->last_window_chrome, OPT(background), w->is_semi_transparent, w->background_opacity);
+    init_window_chrome_state(&w->last_window_chrome, OPT(background), w->is_semi_transparent, w->background_opacity, w->num_tabs < OPT(tab_bar_min_tabs));
 #ifdef __APPLE__
     apply_window_chrome_state(w->handle, w->last_window_chrome, width, height, OPT(hide_window_decorations) != 0);
 #else
