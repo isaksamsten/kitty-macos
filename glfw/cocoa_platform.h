@@ -133,6 +133,7 @@ typedef struct _GLFWwindowNS
     bool            in_traditional_fullscreen;
     bool            in_fullscreen_transition;
     bool            titlebar_hidden;
+    bool            tabs_hidden;
     unsigned long   pre_full_screen_style_mask;
 
     // Cached window properties to filter out duplicate events

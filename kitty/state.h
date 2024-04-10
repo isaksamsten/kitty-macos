@@ -239,6 +239,7 @@ typedef struct WindowChromeState {
     bool show_title_in_titlebar;
     bool resizable;
     int macos_colorspace;
+    bool tabs_hidden;
     float background_opacity;
 } WindowChromeState;
 
