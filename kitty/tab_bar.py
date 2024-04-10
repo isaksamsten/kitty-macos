@@ -567,11 +567,22 @@ class TabBar:
         else:
             self.draw_func = draw_tab_with_fade
         if opts.tab_bar_align == 'center':
-            self.align: Callable[[], None] = partial(self.align_with_factor, 2)
+            align: Callable[[], None] = partial(self.align_with_factor, 2)
         elif opts.tab_bar_align == 'right':
-            self.align = self.align_with_factor
+            align = self.align_with_factor
         else:
-            self.align = lambda: None
+            align = lambda: None
+
+        if opts.hide_window_decorations > 1:
+            def center_single_tab() -> None:
+                if len(self.cell_ranges) > 1:
+                    align()
+                else:
+                    self.align_with_factor(2)
+
+            self.align = center_single_tab
+        else:
+            self.align = align
 
     def patch_colors(self, spec: dict[str, int | None]) -> None:
         opts = get_options()

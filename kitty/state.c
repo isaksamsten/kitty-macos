@@ -476,6 +476,7 @@ static void
 remove_tab(id_type os_window_id, id_type id) {
     WITH_OS_WINDOW(os_window_id)
         remove_tab_inner(os_window, id);
+        set_os_window_chrome(os_window);
     END_WITH_OS_WINDOW
 }
 

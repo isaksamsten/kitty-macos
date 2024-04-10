@@ -36,7 +36,14 @@
 #include <float.h>
 #include <string.h>
 
+#import <objc/runtime.h>
 #define debug debug_rendering
+
+@interface FakeView : NSView
+@end
+@implementation FakeView
+- (BOOL)fakeMouseDownCanMoveWindow { return YES; }
+@end
 
 static const char*
 polymorphic_string_as_utf8(id string) {
@@ -876,7 +883,26 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
         const NSRect contentRect = [window->ns.view frame];
         // NOTE: The returned location uses base 0,1 not 0,0
         const NSPoint pos = [event locationInWindow];
-
+        const NSWindowStyleMask current_style_mask = [window->ns.object styleMask];
+        const bool in_fullscreen = ((current_style_mask & NSWindowStyleMaskFullScreen) != 0) || window->ns.in_traditional_fullscreen;
+        bool is_button_hidden = [[window->ns.object standardWindowButton: NSWindowCloseButton] isHidden];
+        if (!in_fullscreen && window->ns.tabs_hidden) {
+            if(cursorInContentArea(window)) {
+                if(contentRect.size.height - pos.y < 20) {
+                    [[window->ns.object standardWindowButton: NSWindowCloseButton] setHidden:NO];
+                    [[window->ns.object standardWindowButton: NSWindowMiniaturizeButton] setHidden:NO];
+                    [[window->ns.object standardWindowButton: NSWindowZoomButton] setHidden:NO];
+                } else if(!is_button_hidden) {
+                    [[window->ns.object standardWindowButton: NSWindowCloseButton] setHidden:YES];
+                    [[window->ns.object standardWindowButton: NSWindowMiniaturizeButton] setHidden:YES];
+                    [[window->ns.object standardWindowButton: NSWindowZoomButton] setHidden:YES];
+                }
+            } else {
+                [[window->ns.object standardWindowButton: NSWindowCloseButton] setHidden:YES];
+                [[window->ns.object standardWindowButton: NSWindowMiniaturizeButton] setHidden:YES];
+                [[window->ns.object standardWindowButton: NSWindowZoomButton] setHidden:YES];
+            }
+        }
         _glfwInputCursorPos(window, pos.x, contentRect.size.height - pos.y);
     }
 
@@ -885,7 +911,9 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
     if (window->ns.delayed_cursor_update_requested) {
         window->ns.delayed_cursor_update_requested = false;
-        if (cursorInContentArea(window)) updateCursorImage(window);
+        if (cursorInContentArea(window)) {
+            updateCursorImage(window);
+        }
     }
 }
 
@@ -1756,6 +1784,11 @@ static bool createNativeWindow(_GLFWwindow* window,
         _glfwInputError(GLFW_PLATFORM_ERROR, "Cocoa: Failed to create window");
         return false;
     }
+
+    NSView* glView = [window->ns.object contentView];
+    Method originalMethod = class_getInstanceMethod([glView class], @selector(mouseDownCanMoveWindow));
+    Method categoryMethod = class_getInstanceMethod(FakeView.class, @selector(fakeMouseDownCanMoveWindow));
+    method_exchangeImplementations(originalMethod, categoryMethod);
 
     if (window->monitor)
         [window->ns.object setLevel:NSMainMenuWindowLevel + 1];
@@ -2990,7 +3023,7 @@ GLFWAPI GLFWcocoarenderframefun glfwCocoaSetWindowResizeCallback(GLFWwindow *w, 
     return current;
 }
 
-GLFWAPI void glfwCocoaSetWindowChrome(GLFWwindow *w, unsigned int color, bool use_system_color, unsigned int system_color, int background_blur, unsigned int hide_window_decorations, bool show_text_in_titlebar, int color_space, float background_opacity, bool resizable) { @autoreleasepool {
+GLFWAPI void glfwCocoaSetWindowChrome(GLFWwindow *w, unsigned int color, bool use_system_color, unsigned int system_color, int background_blur, unsigned int hide_window_decorations, bool show_text_in_titlebar, int color_space, float background_opacity, bool resizable, bool tabs_hidden) { @autoreleasepool {
     _GLFWwindow* window = (_GLFWwindow*)w;
     const bool is_transparent = ![window->ns.object isOpaque];
     if (!is_transparent) { background_opacity = 1.0; background_blur = 0; }
@@ -3051,10 +3084,11 @@ GLFWAPI void glfwCocoaSetWindowChrome(GLFWwindow *w, unsigned int color, bool us
             has_shadow = true;
             break;
     }
+    window->ns.tabs_hidden = tabs_hidden;
     // shadow causes burn-in/ghosting because cocoa doesnt invalidate it on OS window resize/minimize/restore.
     // https://github.com/kovidgoyal/kitty/issues/6439
     if (is_transparent) has_shadow = false;
-    bool hide_titlebar_buttons = !in_fullscreen && window->ns.titlebar_hidden;
+    bool hide_titlebar_buttons = !in_fullscreen && window->ns.titlebar_hidden && tabs_hidden;
     [window->ns.object setTitlebarAppearsTransparent:titlebar_transparent];
     [window->ns.object setHasShadow:has_shadow];
     [window->ns.object setTitleVisibility:(show_text_in_titlebar) ? NSWindowTitleVisible : NSWindowTitleHidden];
@@ -3069,12 +3103,13 @@ GLFWAPI void glfwCocoaSetWindowChrome(GLFWwindow *w, unsigned int color, bool us
         "Window Chrome state:\n\tbackground: %s\n\tappearance: %s color_space: %s\n\t"
         "blur: %d has_shadow: %d resizable: %d decorations: %s (%d)\n\t"
         "titlebar: transparent: %d title_visibility: %d hidden: %d buttons_hidden: %d"
+        "tabs_hidden: %d"
         "\n",
         background ? [background.description UTF8String] : "<nil>",
         appearance ? [appearance.name UTF8String] : "<nil>",
         cs ? (cs.localizedName ? [cs.localizedName UTF8String] : [cs.description UTF8String]) : "<nil>",
         background_blur, has_shadow, resizable, decorations_desc, window->decorated, titlebar_transparent,
-        show_text_in_titlebar, window->ns.titlebar_hidden, hide_titlebar_buttons
+        show_text_in_titlebar, window->ns.titlebar_hidden, hide_titlebar_buttons, tabs_hidden
     );
     [window->ns.object setColorSpace:cs];
     [[window->ns.object standardWindowButton: NSWindowCloseButton] setHidden:hide_titlebar_buttons];
