@@ -1163,6 +1163,19 @@ convert_from_opts_macos_colorspace(PyObject *py_opts, Options *opts) {
 }
 
 static void
+convert_from_python_macos_autohide_buttons(PyObject *val, Options *opts) {
+    opts->macos_autohide_buttons = PyObject_IsTrue(val);
+}
+
+static void
+convert_from_opts_macos_autohide_buttons(PyObject *py_opts, Options *opts) {
+    PyObject *ret = PyObject_GetAttrString(py_opts, "macos_autohide_buttons");
+    if (ret == NULL) return;
+    convert_from_python_macos_autohide_buttons(ret, opts);
+    Py_DECREF(ret);
+}
+
+static void
 convert_from_python_wayland_enable_ime(PyObject *val, Options *opts) {
     opts->wayland_enable_ime = PyObject_IsTrue(val);
 }
@@ -1354,6 +1367,8 @@ convert_opts_from_python_opts(PyObject *py_opts, Options *opts) {
     convert_from_opts_macos_menubar_title_max_length(py_opts, opts);
     if (PyErr_Occurred()) return false;
     convert_from_opts_macos_colorspace(py_opts, opts);
+    if (PyErr_Occurred()) return false;
+    convert_from_opts_macos_autohide_buttons(py_opts, opts);
     if (PyErr_Occurred()) return false;
     convert_from_opts_wayland_enable_ime(py_opts, opts);
     if (PyErr_Occurred()) return false;

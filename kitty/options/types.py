@@ -373,6 +373,7 @@ option_names = (
     'linux_bell_theme',
     'linux_display_server',
     'listen_on',
+    'macos_autohide_buttons',
     'macos_colorspace',
     'macos_custom_beam_cursor',
     'macos_hide_from_tasks',
@@ -549,6 +550,7 @@ class Options:
     linux_bell_theme: str = '__custom'
     linux_display_server: choices_for_linux_display_server = 'auto'
     listen_on: str = 'none'
+    macos_autohide_buttons: bool = False
     macos_colorspace: choices_for_macos_colorspace = 'srgb'
     macos_custom_beam_cursor: bool = False
     macos_hide_from_tasks: bool = False
@@ -1057,3 +1059,4 @@ nullable_colors = frozenset({
 
 
 secret_options = ('remote_control_password', 'file_transfer_confirmation_bypass')
+

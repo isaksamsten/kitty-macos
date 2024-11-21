@@ -3540,6 +3540,13 @@ created OS windows.
 ''')
 
 
+opt('macos_autohide_buttons', 'no', ctype='bool',
+    option_type='to_bool',
+    long_text='''
+Automatically hide window buttons if the tab bar is hidden.
+''')
+
+
 opt('linux_display_server', 'auto',
     choices=('auto', 'wayland', 'x11'),
     long_text='''
