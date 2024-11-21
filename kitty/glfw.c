@@ -955,7 +955,7 @@ init_window_chrome_state(WindowChromeState *s, color_type active_window_bg, bool
         unsigned long val = OPT(macos_titlebar_color);
         SET_TCOL(val);
     }
-    s->tabs_hidden = OPT(tab_bar_hidden) || tabs_hidden;
+    s->tabs_hidden = (OPT(tab_bar_hidden) || tabs_hidden) && OPT(macos_autohide_buttons);
     s->macos_colorspace = OPT(macos_colorspace);
     s->resizable = OPT(macos_window_resizable);
 #else

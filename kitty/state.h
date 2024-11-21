@@ -111,6 +111,7 @@ typedef struct {
     UnderlineHyperlinks underline_hyperlinks;
     int background_blur;
     long macos_titlebar_color;
+    bool macos_autohide_buttons;
     unsigned long wayland_titlebar_color;
     struct { struct MenuItem *entries; size_t count; } global_menu;
     bool wayland_enable_ime;

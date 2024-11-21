@@ -1063,6 +1063,9 @@ class Parser:
     def listen_on(self, val: str, ans: typing.Dict[str, typing.Any]) -> None:
         ans['listen_on'] = str(val)
 
+    def macos_autohide_buttons(self, val: str, ans: typing.Dict[str, typing.Any]) -> None:
+        ans['macos_autohide_buttons'] = to_bool(val)
+
     def macos_colorspace(self, val: str, ans: typing.Dict[str, typing.Any]) -> None:
         val = val.lower()
         if val not in self.choices_for_macos_colorspace:
